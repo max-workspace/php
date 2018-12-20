@@ -3,6 +3,8 @@ namespace App\Repository;
 
 use App\Models\BrandModel;
 use App\Models\OpenBrandModel;
+use OFashion\Log\Log;
+use Illuminate\Support\Facades\Mail;
 
 class ErpToolRepository
 {
@@ -13,6 +15,24 @@ class ErpToolRepository
         $temp = preg_replace("/[&+-\/]/", " ", $temp);
         $res = preg_replace("/ +/", "_", trim($temp));
         return $res;
+    }
+
+    public function recordLog($title, $content, $logFilePath = '')
+    {
+        Log::warning($title, ['msg' => $content], $logFilePath);
+        return;
+    }
+
+    public function sendEmail($title, $content, $emailAddress = [])
+    {
+        try {
+            Mail::raw($content, function($m) use ($title, $emailAddress) {
+                $m->to($emailAddress)->subject($title);
+            });
+        } catch (\Exception $e) {
+            $this->recordLog('error:erp:sendEmail', ['msg' => (string)$e]);
+        }
+        return;
     }
 
     public function createBrandInfo($insertBrandNameList, $brandInfoList)
