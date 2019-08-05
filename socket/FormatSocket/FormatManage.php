@@ -16,7 +16,7 @@ trait FormatManage
 
     public $errorDescription = 'error';
 
-    public function formatResult($statusCode, $data = [], $description = '')
+    public function formatResult($statusCode, $description = '', $data = null)
     {
         $is_success = ($statusCode == $this->successCode) ? true : false;
         if (!$description) {
