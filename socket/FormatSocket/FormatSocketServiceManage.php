@@ -14,6 +14,12 @@ class FormatSocketServiceManage
 
     public $socketServiceArray = [];
 
+    public $connectSocketArray = [];
+
+    public $EndOfInput = 'EOL';
+
+    public $fetchLength = 11;
+
     public function getSocketService($address, $port, $socketProtocolDomain = AF_INET, $socketType = SOCK_STREAM, $socketProtocol = SOL_TCP)
     {
         $key = $address . ':' . $port;
@@ -50,23 +56,41 @@ class FormatSocketServiceManage
         }
     }
 
-    public function runSocketService($socketService)
+    // todo 首次连接协定传输的信息（每次读取的长度），再次连接时沿用上次协定的通信内容
+    public function runSocketService(FormatSocketObj $socketService)
     {
         while (true) {
             $result = $socketService->acceptSocket();
             if ($result['status'] != $this->successCode) {
                 continue;
             }
-            $socketClient = $result['data'];
+            $connectSocket = $result['data'];
+            $this->recordConnectSocket($socketService, $connectSocket);
             while (true) {
-                $result = $socketService->readFromSocket($socketClient, 11);
+                $result = $socketService->readFromSocket($connectSocket, $this->fetchLength);
                 $data = $result['status'] == $this->successCode ? $result['data'] : $result['description'];
                 echo "read from client: " . $data . PHP_EOL;
-                if ($data == 'EOL') {
+                if ($data == $this->EndOfInput) {
                     break 2;
                 }
             }
         }
+    }
+
+    public function recordConnectSocket(FormatSocketObj $socketService, $connectSocket)
+    {
+        $result = $socketService->getConnectSocketInfo($connectSocket, true);
+        if ($result['status'] != $this->successCode) {
+            return $this->formatResult($this->errorCode, $result['description']);
+        }
+        $addr = $result['data']['addr'];
+        $port = $result['data']['port'];
+        $key = $port ? ($addr . ':' . $port) : $addr;
+        echo "{$key}\n";
+        if (!array_key_exists($key, $this->connectSocketArray)) {
+            $this->connectSocketArray[$key] = $connectSocket;
+        }
+        return $this->formatResult($this->successCode, '', $result['data']);
     }
 }
 

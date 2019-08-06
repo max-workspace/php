@@ -143,4 +143,23 @@ class FormatSocketObj
         }
         return $this->formatResult($this->successCode, '', $result);
     }
+
+    public function getConnectSocketInfo($remoteSocket, $holdPort = false)
+    {
+        $addr = null;
+        $port = null;
+        $parameterArray = [$remoteSocket, &$addr];
+        if ($holdPort) {
+            $parameterArray[] = &$port;
+        }
+        $result = call_user_func_array('socket_getpeername', $parameterArray);
+        if ($result === false) {
+            $socketErrorInfo = $this->getSocketErrorInfo('Unable to get remote socket info: ');
+            return $this->formatResult($this->errorCode, $socketErrorInfo['formatErrorMessage']);
+        }
+        $data = [];
+        $data['addr'] = $addr;
+        $data['port'] = $port;
+        return $this->formatResult($this->successCode, '', $data);
+    }
 }
